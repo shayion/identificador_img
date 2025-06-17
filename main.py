@@ -1,6 +1,10 @@
-    from fastapi import FastAPI, File, UploadFile
+import os
+from fastapi import FastAPI, File, UploadFile
 from google.cloud import vision
 import io
+
+# Configura a chave do serviço
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials/service_account_key.json"
 
 app = FastAPI()
 client = vision.ImageAnnotatorClient()
