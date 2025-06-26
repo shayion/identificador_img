@@ -1,21 +1,24 @@
 # app/models/user.py
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from sqlmodel import Field, SQLModel # Importe Field e SQLModel
+from pydantic import BaseModel # Mantenha BaseModel para UserCreate e Token
 
-# Modelo para a criação de um novo usuário (o que o cliente envia)
-class UserCreate(BaseModel):
-    username: str
-    password: str
-    full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
+# UserInDB agora herda de SQLModel e Field para definir colunas do DB
+class UserInDB(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    hashed_password: str
+    disabled: bool = False
 
-# Modelo para a resposta de um usuário (o que a API retorna, sem a senha hash)
-class User(BaseModel):
+    refresh_token_hash: Optional[str] = Field(default=None)
+
+
+# User é o modelo que será retornado pela API (não inclui a senha hash)
+class User(BaseModel): # User continua sendo um BaseModel para a resposta da API
     username: str
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = None
     disabled: Optional[bool] = None
 
-# Modelo de como o usuário é armazenado no "banco de dados"
-class UserInDB(User):
-    hashed_password: str
+# UserCreate é o modelo para criar um novo usuário (recebe a senha em texto claro)
+class UserCreate(BaseModel): # UserCreate continua sendo um BaseModel para a entrada da API
+    username: str
+    password: str
