@@ -13,6 +13,7 @@ from app.models.user import UserInDB
 SECRET_KEY = "sua_chave_secreta_super_segura" # Mude isso em produção!
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -36,6 +37,8 @@ fake_users_db = {
         "disabled": False,
     }
 }
+
+fake_refresh_tokens_db = {}
 
 # Função para obter usuário do "banco de dados"
 def get_user_from_db(username: str): # Removido 'db' pois fake_users_db está aqui
@@ -62,6 +65,21 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS) # Duração maior
+    to_encode.update({"exp": expire})
+    # O refresh token também será um JWT
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    # Simulação de armazenamento do refresh token (associa ao username)
+    # Em um sistema real, você salvaria este hash no DB associado ao usuário
+    fake_refresh_tokens_db[data["sub"]] = get_password_hash(encoded_jwt) # Salva o hash do refresh token
+    return encoded_jwt
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,6 +94,31 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
     user = get_user_from_db(username) # Usa a função local
+    if user is None:
+        raise credentials_exception
+    return user
+
+async def get_current_user_from_refresh_token(refresh_token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Não foi possível validar o refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    # Verifica se o refresh token é válido (hash armazenado bate com o token)
+    # Em um sistema real, você buscaria o hash do refresh token do DB
+    stored_token_hash = fake_refresh_tokens_db.get(username)
+    if not stored_token_hash or not verify_password(refresh_token, stored_token_hash):
+        raise credentials_exception
+
+    user = get_user_from_db(username)
     if user is None:
         raise credentials_exception
     return user
