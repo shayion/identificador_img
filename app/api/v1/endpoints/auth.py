@@ -1,12 +1,13 @@
 # app/api/v1/endpoints/auth.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session, select  # <-- NOVO: Importa Session e select do SQLModel
+from sqlmodel import Session, select
 
 from app.models.token import Token
-from app.models.user import UserCreate, User, UserInDB  # Importa os modelos de usuário
+# Importa os modelos de usuário atualizados
+from app.models.user import UserCreate, User, UserInDB
 
-# Importa as funções de segurança (sem fake_users_db)
+# Importa as funções de segurança
 from app.core.security import (
     authenticate_user,
     create_access_token,
@@ -16,35 +17,31 @@ from app.core.security import (
     get_current_user_from_refresh_token
 )
 from app.api.v1.deps import get_current_user
-from app.database import get_session  # <-- NOVO: Importa a dependência de sessão do DB
+from app.database import get_session
 
 router = APIRouter(
     prefix="/auth",
     tags=["Autenticação"]
 )
 
-
 @router.post("/login", response_model=Token)
-# ATUALIZADO: Injeta a sessão do DB
 def login_for_access_token(
-        form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_session)  # <-- NOVO: Injeta a sessão
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_session)
 ):
-    user = authenticate_user(db, form_data.username, form_data.password)  # <-- Passa a sessão
+    user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Credenciais inválidas")
 
     access_token = create_access_token(data={"sub": user.username})
-    refresh_token = create_refresh_token(db, data={"sub": user.username})  # <-- Passa a sessão
+    refresh_token = create_refresh_token(db, data={"sub": user.username})
 
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
-
 @router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
-# ATUALIZADO: Injeta a sessão do DB
-def register_new_user(user_in: UserCreate, db: Session = Depends(get_session)):  # <-- NOVO: Injeta a sessão
+def register_new_user(user_in: UserCreate, db: Session = Depends(get_session)):
     # Verifica se o username já existe no DB
-    if get_user_from_db(db, user_in.username):  # <-- Passa a sessão
+    if get_user_from_db(db, user_in.username):
         raise HTTPException(status_code=400, detail="Nome de usuário já registrado")
 
     # Hasheia a senha
@@ -54,32 +51,24 @@ def register_new_user(user_in: UserCreate, db: Session = Depends(get_session)): 
     user_to_db = UserInDB(
         username=user_in.username,
         hashed_password=hashed_password,
+        full_name=user_in.full_name, # NOVO: Salva full_name
+        email=user_in.email,         # NOVO: Salva email
         disabled=False,
-        # Campos opcionais, se existirem em UserCreate, adicione aqui
-        # full_name=user_in.full_name,
-        # email=user_in.email,
     )
 
     # Adiciona e salva o usuário no DB
     db.add(user_to_db)
     db.commit()
-    db.refresh(user_to_db)  # Atualiza o objeto com o ID gerado pelo DB
+    db.refresh(user_to_db) # Atualiza o objeto com o ID gerado pelo DB
 
     # Retorna o modelo User (sem a senha hash)
-    return User(**user_to_db.model_dump(exclude={'hashed_password', 'id', 'refresh_token_hash'}))  # <-- Usa model_validate para converter UserInDB para User
-
+    # Usa model_dump com exclude para não retornar a senha hash e o ID do DB
+    return User(**user_to_db.model_dump(exclude={'hashed_password', 'id', 'refresh_token_hash'}))
 
 @router.post("/logout")
-# ATUALIZADO: Injeta a sessão do DB e atualiza a lógica
 async def logout_user(current_user: UserInDB = Depends(get_current_user), db: Session = Depends(get_session)):
-    """
-    Realiza o logout do usuário.
-    Com JWT, o "logout" é primariamente uma ação do lado do cliente (descartar o token).
-    Para invalidar o refresh token no servidor, precisamos limpá-lo do DB.
-    """
-    # NOVO: Remove o refresh token hash do usuário no DB para invalidá-lo
     if current_user:
-        current_user.refresh_token_hash = None  # Limpa o hash do refresh token
+        current_user.refresh_token_hash = None
         db.add(current_user)
         db.commit()
         db.refresh(current_user)
@@ -88,22 +77,9 @@ async def logout_user(current_user: UserInDB = Depends(get_current_user), db: Se
 
 
 @router.post("/refresh", response_model=Token)
-# ATUALIZADO: Injeta a sessão do DB
 async def refresh_access_token(
-        user_from_refresh: UserInDB = Depends(get_current_user_from_refresh_token),
-        db: Session = Depends(get_session)  # <-- NOVO: Injeta a sessão
+    user_from_refresh: UserInDB = Depends(get_current_user_from_refresh_token),
+    db: Session = Depends(get_session)
 ):
-    """
-    Obtém um novo access token usando um refresh token válido.
-    """
     new_access_token = create_access_token(data={"sub": user_from_refresh.username})
-
-    # ATENÇÃO: Numa estratégia de rotação de refresh tokens, você geraria um NOVO refresh token aqui
-    # e INVALIDARIA o refresh token antigo (que foi usado na requisição).
-    # Para simplicidade agora, vamos apenas retornar o novo access token e o refresh token existente.
-    # Se quiser implementar a rotação, seria:
-    # new_refresh_token = create_refresh_token(db, data={"sub": user_from_refresh.username})
-    # return {"access_token": new_access_token, "token_type": "bearer", "refresh_token": new_refresh_token}
-
-    return {"access_token": new_access_token, "token_type": "bearer",
-            "refresh_token": user_from_refresh.refresh_token_hash}  # <-- Retorna o refresh token hash (que foi o original)
+    return {"access_token": new_access_token, "token_type": "bearer", "refresh_token": user_from_refresh.refresh_token_hash}

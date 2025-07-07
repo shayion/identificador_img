@@ -1,29 +1,64 @@
-from pydantic import BaseModel
-from typing import Optional
+# app/models/user.py
+from typing import Optional, List # Importa List
+from sqlmodel import Field, SQLModel, Relationship # Importa Field, SQLModel, Relationship
+from pydantic import BaseModel, EmailStr # Importa BaseModel, EmailStr
+from datetime import datetime # Importado para o modelo Image (para campos de data/hora)
 
-fake_users_db = {
-    "admin": {
-        "username": "admin",
-        "full_name": "Administrador",
-        "email": "admin@email.com",
-        "hashed_password": "$pbkdf2-sha256$29000$hTDmnBOC8J6TUkppjdGacw$7bqLZ9U5LHXTORmYltHf49J0pZZgtcNG2jTE2bziBLE",  # senha: admin123
-        "disabled": False,
-    }
-}
+# Modelo de como o usuário é armazenado no "banco de dados"
+class UserInDB(SQLModel, table=True): # table=True indica que esta classe é uma tabela do DB
+    id: Optional[int] = Field(default=None, primary_key=True) # ID auto-incrementado
+    username: str = Field(index=True, unique=True) # Campo indexado e único
+    hashed_password: str
+    disabled: bool = False
+    refresh_token_hash: Optional[str] = Field(default=None) # Campo para o hash do refresh token
+    full_name: Optional[str] = None # NOVO: Adicionado full_name ao DB
+    email: Optional[EmailStr] = None # NOVO: Adicionado email ao DB
 
-def get_user(db, username: str):
-    return db.get(username)
+    # Relação com as imagens que o usuário enviou
+    images: List["Image"] = Relationship(back_populates="owner")
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
-class User(BaseModel):
+# Modelo para a criação de um novo usuário (o que o cliente envia)
+class UserCreate(BaseModel):
     username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
+    password: str
+    full_name: Optional[str] = None # NOVO: Adicionado full_name para o input
+    email: Optional[EmailStr] = None # NOVO: Adicionado email para o input
+
+
+# Modelo para a resposta de um usuário (o que a API retorna, sem a senha hash)
+class User(BaseModel): # User continua sendo um BaseModel para a resposta da API
+    username: str
+    full_name: Optional[str] = None # NOVO: Adicionado full_name para a resposta
+    email: Optional[EmailStr] = None # NOVO: Adicionado email para a resposta
     disabled: Optional[bool] = None
 
-class UserInDB(User):
-    hashed_password: str
 
+# Modelo para Imagens (Também é uma tabela do DB)
+class Image(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    filename: str = Field(index=True) # Nome original do arquivo
+    filepath: str = Field(index=True, unique=True) # Caminho completo da imagem salva no disco
+    uploaded_at: datetime = Field(default_factory=datetime.utcnow) # Data e hora do upload
+
+    # Chave estrangeira para o usuário que enviou a imagem
+    owner_id: Optional[int] = Field(default=None, foreign_key="userindb.id")
+
+    # Relação com o modelo User (UserInDB)
+    owner: Optional[UserInDB] = Relationship(back_populates="images")
+
+    # Relação com as labels geradas pelo Google Vision
+    labels: List["ImageLabel"] = Relationship(back_populates="image")
+
+
+# Modelo para Labels da Imagem (Também é uma tabela do DB)
+class ImageLabel(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    description: str = Field(index=True) # A label retornada pelo Google Vision
+    score: float # A confiança da label
+
+    # Chave estrangeira para a imagem à qual esta label pertence
+    image_id: Optional[int] = Field(default=None, foreign_key="image.id")
+
+    # Relação com o modelo Image
+    image: Optional[Image] = Relationship(back_populates="labels")
