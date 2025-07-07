@@ -1,0 +1,314 @@
+/* Estilos Globais */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Crucial para padding e borda serem incluídos na largura/altura */
+}
+
+body,
+html {
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  background-color: #f0f2f5; /* Fundo geral da página (cinza claro) */
+  justify-content: center; /* Centraliza horizontalmente o main-container */
+  align-items: center; /* Centraliza verticalmente o main-container */
+}
+
+/* Contêiner principal que envolve left e right (Login) ou apenas o formulário (Cadastro) */
+.main-container {
+  display: flex; /* Para que .left e .right fiquem lado a lado na tela de Login */
+  background-color: #e6f7ff; /* Fundo azul clarinho que envolve as caixas */
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Garante que o border-radius seja respeitado */
+  height: auto; /* Altura se ajusta ao conteúdo */
+  min-height: 650px; /* Altura mínima para a tela de Login */
+  width: 85%; /* Ocupa 85% da largura da tela */
+  max-width: 1100px; /* Largura máxima geral para Login */
+  margin: 20px; /* Margem externa para não colar nas bordas da tela */
+}
+
+/* Estilos para quando o main-container tem APENAS UMA coluna (tela de Cadastro) */
+.main-container.single-column {
+    flex-direction: column;
+    /* NOVO: Ajuste de largura para o Cadastro */
+    width: 600px; /* FORÇA UMA LARGURA FIXA PARA O CONTÊINER AZUL CLARO NO CADASTRO */
+    max-width: 90%; /* Garante que não transborde em telas menores */
+    min-height: 800px; /* Altura mínima para acomodar os campos do Cadastro */
+    justify-content: center;
+    align-items: center; /* Centraliza o formulário horizontalmente */
+    padding: 30px; /* Padding interno do contêiner azul claro */
+}
+
+
+/* Seção Esquerda (Contém o formulário de Login ou Cadastro) */
+.left {
+  width: 100%; /* Ocupa 100% do seu pai */
+  max-width: none; /* Permite que seja flexível */
+  display: flex;
+  justify-content: center; /* Centraliza o login-box dentro de left */
+  align-items: center; /* Centraliza verticalmente o login-box dentro de left */
+  background-color: transparent; /* Transparente para mostrar o fundo do main-container */
+  padding: 0; /* Remove padding que causou o problema anterior */
+}
+
+/* Ajuste para o 'left' quando está em coluna única (Cadastro) */
+.main-container.single-column .left {
+    width: 100%; /* Ocupa 100% da largura do contêiner 'single-column' */
+    padding: 0;
+}
+
+
+/* Caixa do Formulário (usada tanto para Login quanto para Cadastro) */
+.login-box {
+  width: 100%; /* Faz a caixa de login/cadastro preencher a largura total do seu pai (.left) */
+  max-width: 550px; /* Largura máxima para a caixa cinza */
+  background: #f0f2f5;
+  padding: 60px; /* Padding interno da caixa */
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-box h2 {
+  text-align: center;
+  margin-bottom: 15px;
+  color: #666;
+  font-weight: 700;
+  font-size: 2.2rem;
+}
+
+.login-box h2 span {
+  color: #007bff;
+}
+
+.login-box p {
+  text-align: center;
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 1.05rem;
+}
+
+.login-box label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+}
+
+.input-wrapper { /* Usado apenas na tela de Login */
+  position: relative;
+  margin-bottom: 25px;
+}
+
+/* Estilos para os campos de input (aplicado a ambos Login e Cadastro) */
+.login-box input {
+  width: 100%; /* FAZ O INPUT PREENCHER A LARGURA DO SEU PAI */
+  padding: 15px 20px;
+  font-size: 1.1rem;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.3s ease;
+  margin-bottom: 20px; /* Margem entre os inputs */
+}
+
+.login-box input:focus {
+  border-color: #007bff;
+}
+
+.input-wrapper i { /* Usado apenas na tela de Login */
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  cursor: pointer;
+}
+
+/* Estilos para os botões (aplicado a ambos Login e Cadastro) */
+.login-box button {
+  width: 100%; /* FAZ O BOTÃO PREENCHER A LARGURA DO SEU PAI */
+  padding: 15px;
+  background-color: #007bff; /* Azul padrão para login */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: background-color 0.3s ease;
+}
+
+.login-box button:hover {
+  background-color: #0056b3;
+}
+
+/* Estilo específico para o botão de cadastro (verde) */
+.login-box button#registerBtn {
+  background-color: #28a745; /* Verde para cadastro */
+}
+
+.login-box button#registerBtn:hover {
+  background-color: #218838;
+}
+
+
+/* Google button (mantido como está) */
+.google-btn {
+  background-color: #dc3545;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.google-btn:hover {
+  background-color: #b52a37;
+  border-radius: 6px;
+}
+
+.google-btn img {
+  height: 20px;
+}
+
+/* Links de Login/Cadastro (aplicado a ambos) */
+.links { /* Usado na tela de Cadastro */
+    margin-top: 20px;
+    text-align: center;
+}
+
+.login-links { /* Usado na tela de Login */
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.links a, .login-links a { /* Estilos para ambos os links */
+  font-size: 0.95rem;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.links a:hover, .login-links a:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+
+/* Seção Direita (Shape) - apenas na tela de Login */
+.right {
+  width: 50%;
+  position: relative;
+  background-color: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 40px;
+}
+
+.shape {
+  width: 90%;
+  max-width: 600px;
+  background-color: #007bff;
+  color: white;
+  padding: 80px;
+  border-radius: 80px 20px 100px 40px;
+  text-align: center;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.shape h2 {
+  font-size: 1.6rem;
+  margin-bottom: 25px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.features-list li {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.error {
+  color: #dc3545;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 15px;
+  font-weight: 500;
+}
+
+.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+}
+
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .main-container {
+    flex-direction: column;
+    width: 100%;
+    max-width: 500px;
+    min-height: auto;
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  /* Ajuste para o main-container.single-column no mobile */
+  .main-container.single-column {
+    width: 100%;
+    max-width: 500px; /* Garante que não exceda o limite geral no mobile */
+    min-height: auto;
+    padding: 0;
+  }
+
+
+  .left,
+  .right {
+    width: 100%;
+  }
+
+  .right {
+    display: none;
+  }
+
+  body {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .login-box {
+    margin: 20px;
+  }
+}

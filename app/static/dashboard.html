@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gerenciador de Documentos - Dashboard</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+      /* Estilos Gerais */
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        background: #f0f2f5;
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        background-color: #007bff;
+        color: white;
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+      }
+      header h2 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 1.5rem;
+      }
+      .header-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+      .header-btn,
+      .logout-btn {
+        background-color: #007bff;
+        border: 1px solid #0056b3;
+        padding: 10px 18px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        color: white;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+      }
+      .header-btn:hover {
+        background-color: #0056b3;
+      }
+      .logout-btn {
+        background-color: #dc3545;
+        border-color: #b52a37;
+      }
+      .logout-btn:hover {
+        background-color: #b52a37;
+      }
+
+      /* Layout Principal (Dashboard) */
+      .main-content {
+        display: flex;
+        flex-grow: 1;
+      }
+      .sidebar {
+        width: 280px;
+        background-color: #f0f2f5; /* ALTERADO: Fundo da sidebar para cinza claro */
+        border-right: 1px solid #eee;
+        padding: 20px;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .sidebar h3 {
+        color: #007bff;
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+      #folderSearchInput {
+        width: 100%;
+        padding: 8px 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 0.9rem;
+      }
+      .folder-tree {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        flex-grow: 1;
+      }
+      .folder-tree li {
+        padding: 5px 0;
+        font-size: 0.95rem;
+        color: #555;
+        transition: color 0.2s ease;
+      }
+      .folder-tree .folder-item-wrapper {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          padding: 3px 0;
+          border-radius: 4px;
+          transition: background-color 0.2s ease;
+      }
+      .folder-tree .folder-item-wrapper:hover {
+          background-color: #f0f8ff;
+      }
+      .folder-tree .folder-item-wrapper.active {
+          background-color: #e6f7ff;
+          font-weight: 600;
+          color: #007bff;
+      }
+      .folder-tree .folder-toggle {
+        margin-right: 5px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .folder-tree .folder-name {
+          flex-grow: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+      }
+      .folder-tree ul {
+        list-style: none;
+        padding-left: 20px;
+        margin: 0;
+      }
+      .folder-tree ul.collapsed {
+        display: none;
+      }
+      .folder-tree .cover-image-thumbnail {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        object-fit: cover;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+
+
+      .container {
+        flex-grow: 1;
+        max-width: 900px;
+        margin: 30px auto;
+        background: #f0f2f5;
+        padding: 25px 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+      }
+      .welcome-message {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+      }
+      .upload-section h3 {
+        margin-bottom: 15px;
+        font-weight: 700;
+        color: #007bff;
+      }
+      .upload-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+      }
+      #fileInput {
+        flex-grow: 1;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1.5px solid #ccc;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+      }
+      #fileInput:hover {
+        border-color: #007bff;
+      }
+      #uploadBtn,
+      #newFolderBtn,
+      #recognizeBtn { /* Novo botão de reconhecimento */
+        background-color: #007bff;
+        color: white;
+        padding: 11px 25px;
+        font-weight: 700;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      #uploadBtn:hover,
+      #newFolderBtn:hover,
+      #recognizeBtn:hover {
+        background-color: #0056b3;
+      }
+      #searchInput {
+        padding: 10px 12px;
+        border: 1.5px solid #ccc;
+        border-radius: 6px;
+        font-size: 1rem;
+        width: 100%;
+        max-width: 400px;
+        margin-bottom: 5px;
+        transition: border-color 0.3s ease;
+      }
+      #searchInput:hover,
+      #searchInput:focus {
+        border-color: #007bff;
+        outline: none;
+      }
+
+      /* Sugestões de Pesquisa */
+      #searchResults {
+        list-style: none;
+        padding: 0;
+        margin-top: 0;
+        border: 1px solid #ddd;
+        border-top: none;
+        max-height: 200px;
+        overflow-y: auto;
+        background-color: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        width: 400px;
+        z-index: 999;
+      }
+      #searchResults li {
+        padding: 10px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.2s ease;
+      }
+      #searchResults li:last-child {
+        border-bottom: none;
+      }
+      #searchResults li:hover {
+        background-color: #f0f8ff;
+      }
+      #searchResults li.highlighted {
+        background-color: #e6f7ff;
+      }
+
+      /* Lista de Arquivos/Pastas */
+      .file-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 20px;
+      }
+      .file-item {
+        background: #f9fafb;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+        cursor: pointer;
+      }
+      .file-item.folder {
+        background: #e3f0ff;
+      }
+      .file-preview {
+        height: 120px;
+        background: #e1e4eb;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        font-size: 50px;
+        color: #666;
+      }
+      .file-preview.folder {
+        color: #007bff;
+      }
+      .file-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .file-info {
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+      .file-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+        word-break: break-word;
+        flex-grow: 1;
+      }
+      .file-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .btn-edit,
+      .btn-delete {
+        background: #007bff;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background-color 0.3s ease;
+      }
+      .btn-edit:hover {
+        background-color: #0056b3;
+      }
+      .btn-delete {
+        background: #dc3545;
+      }
+      .btn-delete:hover {
+        background-color: #b52a37;
+      }
+      /* Input inline editing */
+      .edit-input {
+        font-size: 0.9rem;
+        padding: 5px 8px;
+        border-radius: 5px;
+        border: 1.5px solid #007bff;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .btn-back {
+        margin-bottom: 10px;
+        background-color: #6c757d;
+        padding: 7px 18px;
+        border-radius: 6px;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        width: fit-content;
+      }
+      .btn-back:hover {
+        background-color: #5a6268;
+      }
+
+      /* Modais (Compartilhados) */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #888;
+        border-radius: 10px;
+        width: 80%;
+        max-width: 600px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .close-button {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+      }
+      .close-button:hover,
+      .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .modal-content input[type='text'],
+      .modal-content textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 1rem;
+      }
+      .modal-content textarea {
+        min-height: 150px;
+        resize: vertical;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .modal-actions button {
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+      }
+      .modal-actions .save-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+      }
+      .modal-actions .save-btn:hover {
+        background-color: #218838;
+      }
+      .modal-actions .cancel-btn {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+      }
+      .modal-actions .cancel-btn:hover {
+        background-color: #5a6268;
+      }
+
+      /* Estilos específicos do modal de pasta */
+      .folder-cover-preview {
+        width: 100px;
+        height: 100px;
+        border: 1px dashed #ccc;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        margin-top: 10px;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      .folder-cover-preview.empty::before {
+        content: 'Nenhuma capa selecionada';
+        font-size: 0.8rem;
+        color: #888;
+        text-align: center;
+        padding: 5px;
+      }
+      .folder-cover-selection {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .folder-cover-selection label, .folder-cover-selection button {
+        background-color: #007bff;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        border: none;
+        transition: background-color 0.3s ease;
+      }
+      .folder-cover-selection label:hover, .folder-cover-selection button:hover {
+        background-color: #0056b3;
+      }
+      .folder-cover-selection input[type="file"] {
+        display: none;
+      }
+
+      /* Estilos do Modal da Câmera (e Reconhecimento) */
+      #cameraModal video, #recognizeModal video {
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        background-color: black;
+        border-radius: 8px;
+      }
+      #cameraModal canvas, #recognizeModal canvas {
+        display: none;
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        background-color: black;
+        border-radius: 8px;
+      }
+      #cameraModal .camera-controls, #recognizeModal .camera-controls {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 15px;
+      }
+      #cameraModal .camera-controls button, #recognizeModal .camera-controls button {
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        border: none;
+        transition: background-color 0.3s ease;
+      }
+      #cameraModal .camera-controls .capture-btn, #recognizeModal .camera-controls .capture-btn {
+        background-color: #28a745;
+        color: white;
+      }
+      #cameraModal .camera-controls .capture-btn:hover, #recognizeModal .camera-controls .capture-btn:hover {
+        background-color: #218838;
+      }
+      #cameraModal .camera-controls .retake-btn, #recognizeModal .camera-controls .retake-btn {
+        background-color: #ffc107;
+        color: black;
+      }
+      #cameraModal .camera-controls .retake-btn:hover, #recognizeModal .camera-controls .retake-btn:hover {
+        background-color: #e0a800;
+      }
+      #cameraModal .camera-controls .confirm-btn, #recognizeModal .camera-controls .confirm-btn {
+        background-color: #007bff;
+        color: white;
+      }
+      #cameraModal .camera-controls .confirm-btn:hover, #recognizeModal .camera-controls .confirm-btn:hover {
+        background-color: #0056b3;
+      }
+      #cameraModal .camera-error, #recognizeModal .camera-error {
+        color: red;
+        margin-top: 10px;
+        text-align: center;
+      }
+      #recognizeModal .recognition-status {
+        text-align: center;
+        margin-top: 10px;
+        font-weight: 600;
+        color: #007bff;
+      }
+
+
+      /* Responsividade */
+      @media (max-width: 768px) {
+        .main-content {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid #eee;
+          padding: 15px;
+          height: auto;
+        }
+        .container {
+          margin: 15px;
+          padding: 15px;
+        }
+        .upload-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .header-actions {
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 10px;
+        }
+        .header-btn, .logout-btn {
+            width: 100%;
+            text-align: center;
+        }
+        #searchInput, #searchResults {
+            max-width: 100%;
+            width: 100%;
+        }
+        .folder-cover-selection {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .folder-cover-selection label, .folder-cover-selection button {
+            width: 100%;
+            text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h2>Gerenciador de Documentos</h2>
+      <div class="header-actions">
+        <button id="recognizeBtn" class="header-btn">Reconhecer Pessoa</button> <button id="newDocBtn" class="header-btn">Novo Documento de Texto</button>
+        <button id="logoutBtn" class="logout-btn">Sair</button>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="sidebar">
+        <h3>Minhas Pastas</h3>
+        <input type="text" id="folderSearchInput" placeholder="Pesquisar pastas..." />
+        <ul id="folderTree" class="folder-tree">
+          </ul>
+      </div>
+
+      <div class="container">
+        <div class="welcome-message">
+          Bem-vindo, <span id="userEmail">usuario@exemplo.com</span>!
+        </div>
+
+        <div class="upload-section">
+          <h3>Conteúdo da Pasta Atual</h3>
+
+          <div style="position: relative;">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Pesquisar arquivos e pastas aqui..."
+            />
+            <ul id="searchResults" style="display: none;"></ul>
+          </div>
+
+          <div class="upload-controls">
+            <input type="file" id="fileInput" multiple />
+            <button id="uploadBtn">Enviar Arquivos</button>
+            <button id="newFolderBtn">Nova Pasta</button>
+          </div>
+
+          <button id="backBtn" class="btn-back" style="display: none">
+            ← Voltar
+          </button>
+
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="newDocModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" id="closeDocModalBtn">&times;</span>
+        <h2>Criar Novo Documento de Texto</h2>
+        <input type="text" id="docTitleInput" placeholder="Título do documento" />
+        <textarea id="docContentInput" placeholder="Comece a escrever aqui..."></textarea>
+        <div class="modal-actions">
+          <button class="save-btn" id="saveDocBtn">Salvar</button>
+          <button class="cancel-btn" id="cancelDocBtn">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="folderModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" id="closeFolderModalBtn">&times;</span>
+        <h2 id="folderModalTitle">Criar Nova Pasta</h2>
+        <input type="text" id="folderNameInput" placeholder="Nome da pasta" />
+        <div class="folder-cover-selection">
+            <input type="file" id="folderCoverInput" accept="image/*" />
+            <label for="folderCoverInput">Selecionar Imagem de Capa</label>
+            <button id="takePhotoBtn">Tirar Foto</button>
+            <div id="folderCoverPreview" class="folder-cover-preview empty"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="save-btn" id="saveFolderBtn">Salvar</button>
+          <button class="cancel-btn" id="cancelFolderBtn">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="cameraModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeCameraModalBtn">&times;</span>
+            <h2>Tirar Foto para Capa</h2>
+            <video id="videoElement" autoplay></video>
+            <canvas id="canvasElement" style="display: none;"></canvas>
+            <p id="cameraError" class="camera-error" style="display: none;">Não foi possível acessar a câmera.</p>
+            <div class="camera-controls">
+                <button id="captureBtn" class="capture-btn">Tirar Foto</button>
+                <button id="retakeBtn" class="retake-btn" style="display: none;">Tirar de Novo</button>
+                <button id="confirmPhotoBtn" class="confirm-btn" style="display: none;">Confirmar Foto</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="recognizeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeRecognizeModalBtn">&times;</span>
+            <h2>Reconhecer Pessoa</h2>
+            <video id="recognizeVideoElement" autoplay></video>
+            <canvas id="recognizeCanvasElement" style="display: none;"></canvas>
+            <p id="recognizeCameraError" class="camera-error" style="display: none;">Não foi possível acessar a câmera.</p>
+            <p id="recognitionStatus" class="recognition-status">Aguardando detecção...</p>
+            <div class="camera-controls">
+                <button id="startRecognitionBtn" class="capture-btn">Iniciar Reconhecimento</button>
+                <button id="stopRecognitionBtn" class="cancel-btn" style="display: none;">Parar Reconhecimento</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById('fileInput');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const newFolderBtn = document.getElementById('newFolderBtn');
+      const fileList = document.getElementById('fileList');
+      const searchInput = document.getElementById('searchInput');
+      const searchResults = document.getElementById('searchResults');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const backBtn = document.getElementById('backBtn');
+      const newDocBtn = document.getElementById('newDocBtn');
+
+      // Elementos do Modal de Documento
+      const newDocModal = document.getElementById('newDocModal');
+      const closeDocModalBtn = document.getElementById('closeDocModalBtn');
+      const docTitleInput = document.getElementById('docTitleInput');
+      const docContentInput = document.getElementById('docContentInput');
+      const saveDocBtn = document.getElementById('saveDocBtn');
+      const cancelDocBtn = document.getElementById('cancelDocBtn');
+
+      // Elementos do Modal de Pasta
+      const folderModal = document.getElementById('folderModal');
+      const closeFolderModalBtn = document.getElementById('closeFolderModalBtn');
+      const folderModalTitle = document.getElementById('folderModalTitle');
+      const folderNameInput = document.getElementById('folderNameInput');
+      const folderCoverInput = document.getElementById('folderCoverInput');
+      const folderCoverPreview = document.getElementById('folderCoverPreview');
+      const takePhotoBtn = document.getElementById('takePhotoBtn');
+      const saveFolderBtn = document.getElementById('saveFolderBtn');
+      const cancelFolderBtn = document.getElementById('cancelFolderBtn');
+
+      // Elementos do Modal da Câmera para CAPA
+      const cameraModal = document.getElementById('cameraModal');
+      const closeCameraModalBtn = document.getElementById('closeCameraModalBtn');
+      const videoElement = document.getElementById('videoElement'); // Video para CAPA
+      const canvasElement = document.getElementById('canvasElement');
+      const cameraError = document.getElementById('cameraError');
+      const captureBtn = document.getElementById('captureBtn');
+      const retakeBtn = document.getElementById('retakeBtn');
+      const confirmPhotoBtn = document.getElementById('confirmPhotoBtn');
+      let cameraStream = null;
+
+      // Elementos do NOVO Modal de RECONHECIMENTO
+      const recognizeBtn = document.getElementById('recognizeBtn');
+      const recognizeModal = document.getElementById('recognizeModal');
+      const closeRecognizeModalBtn = document.getElementById('closeRecognizeModalBtn');
+      const recognizeVideoElement = document.getElementById('recognizeVideoElement'); // Video para RECONHECIMENTO
+      const recognizeCanvasElement = document.getElementById('recognizeCanvasElement'); // Canvas para RECONHECIMENTO
+      const recognizeCameraError = document.getElementById('recognizeCameraError');
+      const recognitionStatus = document.getElementById('recognitionStatus');
+      const startRecognitionBtn = document.getElementById('startRecognitionBtn');
+      const stopRecognitionBtn = document.getElementById('stopRecognitionBtn');
+      let recognitionStream = null; // Stream para a câmera de reconhecimento
+      let recognitionInterval = null; // Intervalo para o loop de reconhecimento
+      let faceMatcher = null; // Objeto para comparar descritores faciais
+
+      const folderTreeElement = document.getElementById('folderTree');
+      const folderSearchInput = document.getElementById('folderSearchInput');
+
+      // --- Estrutura de dados para arquivos e pastas ---
+      let rootFolder = {
+        id: 'root',
+        name: 'Raiz',
+        folders: [],
+        files: [],
+      };
+
+      // Tenta carregar o estado salvo do localStorage
+      let savedRootFolder = JSON.parse(localStorage.getItem('documentManagerData'));
+      if (savedRootFolder) {
+        rootFolder = savedRootFolder;
+      }
+
+      let currentFolder = rootFolder;
+      let editingFolderId = null;
+      let currentFolderCoverImage = null;
+
+      // --- Variáveis para Face-API.js ---
+      const MODEL_URL = './models'; // Caminho para os modelos da face-api.js
+
+      // Carrega os modelos de machine learning da face-api.js
+      async function loadModels() {
+          recognitionStatus.textContent = 'Carregando modelos de reconhecimento...';
+          try {
+              await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+              await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+              await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+              recognitionStatus.textContent = 'Modelos carregados. Pronto para reconhecimento.';
+              startRecognitionBtn.disabled = false; // Habilita o botão após carregar
+          } catch (error) {
+              console.error("Erro ao carregar modelos da Face-API.js:", error);
+              recognitionStatus.textContent = 'Erro ao carregar modelos. Verifique o console.';
+              startRecognitionBtn.disabled = true; // Desabilita o botão em caso de erro
+          }
+      }
+      loadModels(); // Chama para carregar os modelos ao iniciar
+
+
+      // --- Funções Auxiliares ---
+
+      // Salva o estado atual no localStorage
+      function saveState() {
+        localStorage.setItem('documentManagerData', JSON.stringify(rootFolder));
+      }
+
+      // Função recursiva para encontrar uma pasta pelo ID
+      function findFolderById(folder, id) {
+        if (folder.id === id) {
+          return folder;
+        }
+        if (!folder.folders) return null;
+
+        for (const subFolder of folder.folders) {
+          const found = findFolderById(subFolder, id);
+          if (found) {
+            return found;
+          }
+        }
+        return null;
+      }
+
+      // Função recursiva para encontrar a pasta pai
+      function findParentFolder(currentSearchFolder, targetFolderId) {
+          if (!currentSearchFolder.folders) return null;
+
+          for (const subFolder of currentSearchFolder.folders) {
+              if (subFolder.id === targetFolderId) {
+                  return currentSearchFolder;
+              }
+              const deeper = findParentFolder(subFolder, targetFolderId);
+              if (deeper) {
+                  return deeper;
+              }
+          }
+          return null;
+      }
+
+      // Função recursiva para coletar todos os descritores faciais de todas as pastas
+      function collectAllFaceDescriptors(folder, descriptors = []) {
+          if (folder.faceDescriptor && folder.faceDescriptor.length > 0) {
+              descriptors.push(
+                  new faceapi.LabeledFaceDescriptors(folder.name, [new Float32Array(folder.faceDescriptor)])
+              );
+          }
+          if (folder.folders) {
+              folder.folders.forEach(subFolder => {
+                  collectAllFaceDescriptors(subFolder, descriptors);
+              });
+          }
+          return descriptors;
+      }
+
+
+      // --- Renderização do Menu Lateral (Árvore de Pastas) ---
+
+      function renderFolderTree(folder, parentUl, searchTerm = '', isRootCall = false) {
+        const matchesSearch = folder.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const hasMatchingChildren = searchTerm ? findFolderInSubtree(folder, searchTerm, true) : true;
+
+        if (!isRootCall && searchTerm && !matchesSearch && !hasMatchingChildren) {
+            return;
+        }
+
+        const li = document.createElement('li');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'folder-item-wrapper';
+
+        const toggle = document.createElement('span');
+        toggle.className = 'folder-toggle';
+        toggle.textContent = folder.folders && folder.folders.length > 0 ? '▶' : ' ';
+
+        const folderIcon = document.createElement('img');
+        folderIcon.className = 'cover-image-thumbnail';
+        if (folder.coverImage) {
+            folderIcon.src = folder.coverImage;
+            folderIcon.alt = `Capa de ${folder.name}`;
+        } else {
+            folderIcon.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwN2JmZiI+PHBhdGggZD0iTTIwIDZoLTguNWwtMS44LTJINUMzLjkgNCAzIDQuOSAzIDZ2MTJjMCAxLjEgLjkgMiAyIDJoMTZjMS4xIDAgMi0uOSAyLTJWOGMwLTEuMS0uOS0yLTItMnpNNyAyMEg1Yy0uNiAwLTEtLjQtMS0xVjdoM3YxM3oiLz48L3N2Zz4=';
+            folderIcon.alt = 'Ícone de Pasta';
+        }
+
+        const folderNameSpan = document.createElement('span');
+        folderNameSpan.className = 'folder-name';
+        folderNameSpan.textContent = folder.name;
+
+        wrapper.appendChild(toggle);
+        wrapper.appendChild(folderIcon);
+        wrapper.appendChild(folderNameSpan);
+        li.appendChild(wrapper);
+
+        const ul = document.createElement('ul');
+        ul.className = 'collapsed';
+
+        if (folder.folders && folder.folders.length > 0) {
+          toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            ul.classList.toggle('collapsed');
+            toggle.textContent = ul.classList.contains('collapsed') ? '▶' : '▼';
+          });
+        } else {
+            toggle.style.opacity = '0';
+        }
+
+        wrapper.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.folder-item-wrapper').forEach(item => {
+                item.classList.remove('active');
+            });
+            wrapper.classList.add('active');
+            openFolder(folder);
+        });
+
+        if (currentFolder.id === folder.id) {
+            wrapper.classList.add('active');
+            let tempFolder = folder;
+            while(tempFolder.id !== 'root') {
+                const parent = findParentFolder(rootFolder, tempFolder.id);
+                if (parent) {
+                    const parentLi = folderTreeElement.querySelector(`[data-folder-id="${parent.id}"]`);
+                    if (parentLi) {
+                        const parentUlElement = parentLi.querySelector('ul');
+                        if (parentUlElement) {
+                            parentUlElement.classList.remove('collapsed');
+                            parentLi.querySelector('.folder-toggle').textContent = '▼';
+                        }
+                    }
+                    tempFolder = parent;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        li.dataset.folderId = folder.id;
+
+        if (folder.folders) {
+            folder.folders.forEach(subFolder => {
+                if (searchTerm === '' || findFolderInSubtree(subFolder, searchTerm) || subFolder.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    renderFolderTree(subFolder, ul, searchTerm);
+                }
+            });
+        }
+
+        li.appendChild(ul);
+        parentUl.appendChild(li);
+      }
+
+      function findFolderInSubtree(folder, searchTerm, directMatchOnly = false) {
+          if (!folder.folders && !folder.files) return false;
+
+          if (directMatchOnly && folder.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+              return true;
+          }
+          if (!directMatchOnly && folder.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+              return true;
+          }
+          if (folder.folders) {
+              for (const sub of folder.folders) {
+                  if (findFolderInSubtree(sub, searchTerm)) {
+                      return true;
+                  }
+              }
+          }
+          if (folder.files) {
+              for (const file of folder.files) {
+                  if (file.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                      return true;
+                  }
+              }
+          }
+          return false;
+      }
+
+
+      function updateFolderTree() {
+        folderTreeElement.innerHTML = '';
+        const searchTerm = folderSearchInput.value;
+
+        const rootLi = document.createElement('li');
+        const rootWrapper = document.createElement('div');
+        rootWrapper.className = 'folder-item-wrapper';
+
+        const rootToggle = document.createElement('span');
+        rootToggle.className = 'folder-toggle';
+        rootToggle.textContent = rootFolder.folders.length > 0 ? '▼' : ' ';
+
+        const rootIcon = document.createElement('img');
+        rootIcon.className = 'cover-image-thumbnail';
+        rootIcon.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwN2JmZiI+PHBhdGggZD0iTTIwIDZoLTguNWwtMS44LTJINUMzLjkgNCAzIDQuOSAzIDZ2MTJjMCAxLjEgLjkgMiAyIDJoMTYzLjEgMGwtdjhoMTZjMS4xIDAgMi0uOSAyLTJWOGMwLTEuMS0uOS0yLTItMnpNNyAyMEg1Yy0uNiAwLTEtLjQtMS0xVjdoM3YxM3oiLz48L3N2Zz4=';
+        rootIcon.alt = 'Ícone de Pasta Raiz';
+
+
+        const rootNameSpan = document.createElement('span');
+        rootNameSpan.className = 'folder-name';
+        rootNameSpan.textContent = rootFolder.name;
+
+        rootWrapper.appendChild(rootToggle);
+        rootWrapper.appendChild(rootIcon);
+        rootWrapper.appendChild(rootNameSpan);
+        rootLi.appendChild(rootWrapper);
+
+        const rootUl = document.createElement('ul');
+        rootUl.classList.remove('collapsed');
+
+        rootWrapper.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.folder-item-wrapper').forEach(item => {
+                item.classList.remove('active');
+            });
+            rootWrapper.classList.add('active');
+            openFolder(rootFolder);
+        });
+
+        if (currentFolder.id === rootFolder.id) {
+            rootWrapper.classList.add('active');
+        }
+
+        rootLi.dataset.folderId = rootFolder.id;
+
+        rootFolder.folders.forEach(subFolder => {
+            if (searchTerm === '' || findFolderInSubtree(subFolder, searchTerm)) {
+                renderFolderTree(subFolder, rootUl, searchTerm);
+            }
+        });
+
+        rootLi.appendChild(rootUl);
+        folderTreeElement.appendChild(rootLi);
+      }
+
+      // --- Funções de Renderização do Conteúdo Principal ---
+
+      function renderFiles(filteredFiles = null, filteredFolders = null) {
+        fileList.innerHTML = '';
+        searchResults.style.display = 'none';
+
+        backBtn.style.display = currentFolder.id === 'root' ? 'none' : 'inline-block';
+
+        const foldersToShow = filteredFolders || currentFolder.folders;
+        const filesToShow = filteredFiles || currentFolder.files;
+
+        // Renderiza pastas (visualização do painel principal)
+        foldersToShow.forEach((folder, index) => {
+            const folderItem = document.createElement('div');
+            folderItem.className = 'file-item folder';
+            folderItem.title = folder.name;
+
+            const preview = document.createElement('div');
+            preview.className = 'file-preview folder';
+            if (folder.coverImage) {
+                const img = document.createElement('img');
+                img.src = folder.coverImage;
+                preview.appendChild(img);
+            } else {
+                preview.textContent = '📁';
+            }
+
+
+            const info = document.createElement('div');
+            info.className = 'file-info';
+
+            const folderName = document.createElement('div');
+            folderName.className = 'file-name';
+            folderName.textContent = folder.name;
+
+            const actions = document.createElement('div');
+            actions.className = 'file-actions';
+
+            const btnEdit = document.createElement('button');
+            btnEdit.className = 'btn-edit';
+            btnEdit.textContent = 'Editar';
+            btnEdit.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openFolderModal(folder.name, folder.coverImage, folder.id);
+            });
+
+            const btnDelete = document.createElement('button');
+            btnDelete.className = 'btn-delete';
+            btnDelete.textContent = 'Apagar';
+            btnDelete.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`Deseja realmente apagar a pasta "${folder.name}" e todo o seu conteúdo?`)) {
+                    const parent = findParentFolder(rootFolder, folder.id);
+                    if (parent) {
+                        parent.folders = parent.folders.filter(f => f.id !== folder.id);
+                    }
+                    if (currentFolder.id === folder.id) {
+                        openFolder(rootFolder);
+                    }
+                    filterFiles();
+                    updateFolderTree();
+                    saveState();
+                }
+            });
+
+            actions.appendChild(btnEdit);
+            actions.appendChild(btnDelete);
+
+            info.appendChild(folderName);
+            info.appendChild(actions);
+
+            folderItem.appendChild(preview);
+            folderItem.appendChild(info);
+
+            folderItem.addEventListener('click', () => {
+                openFolder(folder);
+            });
+
+            fileList.appendChild(folderItem);
+        });
+
+
+        // Renderiza arquivos (visualização do painel principal)
+        filesToShow.forEach((file, index) => {
+          const fileItem = document.createElement('div');
+          fileItem.className = 'file-item';
+
+          const preview = document.createElement('div');
+          preview.className = 'file-preview';
+
+          if (file.fileType && file.fileType.startsWith('image/')) {
+            if (file.content) {
+                const img = document.createElement('img');
+                img.src = file.content;
+                preview.appendChild(img);
+            } else {
+                preview.textContent = '🖼️';
+                preview.style.fontSize = '50px';
+                preview.style.color = '#666';
+            }
+          } else if (file.fileType === 'text/plain') {
+            preview.textContent = '📝';
+            preview.style.fontSize = '50px';
+            preview.style.color = '#007bff';
+          } else {
+            preview.textContent = '📄';
+            preview.style.fontSize = '50px';
+            preview.style.color = '#666';
+          }
+
+          const info = document.createElement('div');
+          info.className = 'file-info';
+
+          const fileName = document.createElement('div');
+          fileName.className = 'file-name';
+          fileName.textContent = file.name;
+
+          const actions = document.createElement('div');
+          actions.className = 'file-actions';
+
+          const btnEdit = document.createElement('button');
+          btnEdit.className = 'btn-edit';
+          btnEdit.textContent = 'Editar';
+          btnEdit.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (file.fileType === 'text/plain') {
+                openNewDocModal(file.name.replace(/\.txt$/, ''), file.content, index);
+            } else {
+                startEditingFile(index, fileName);
+            }
+          });
+
+          const btnDelete = document.createElement('button');
+          btnDelete.className = 'btn-delete';
+          btnDelete.textContent = 'Apagar';
+          btnDelete.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentFolder.files.splice(index, 1);
+            filterFiles();
+            saveState();
+          });
+
+          actions.appendChild(btnEdit);
+          actions.appendChild(btnDelete);
+
+          info.appendChild(fileName);
+          info.appendChild(actions);
+
+          fileItem.appendChild(preview);
+          fileItem.appendChild(info);
+
+          fileList.appendChild(fileItem);
+        });
+
+        if (foldersToShow.length + filesToShow.length === 0) {
+          fileList.innerHTML =
+            '<p style="color:#666; font-style:italic;">Nenhum arquivo ou pasta encontrado nesta pasta.</p>';
+        }
+      }
+
+      function openFolder(folder) {
+        currentFolder = folder;
+        searchInput.value = '';
+        renderFiles();
+        updateFolderTree();
+      }
+
+      backBtn.addEventListener('click', () => {
+        if (currentFolder.id === 'root') return;
+        currentFolder = findParentFolder(rootFolder, currentFolder.id) || rootFolder;
+        searchInput.value = '';
+        renderFiles();
+        updateFolderTree();
+      });
+
+      // --- Edição de Nomes de Arquivos (não pasta) ---
+      function startEditingFile(index, fileNameElem) {
+        const oldFile = currentFolder.files[index];
+        const oldName = oldFile.name;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = oldName;
+        input.className = 'edit-input';
+
+        fileNameElem.replaceWith(input);
+        input.focus();
+
+        input.addEventListener('blur', () => finishEditingFile(index, input, oldFile));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            input.blur();
+          } else if (e.key === 'Escape') {
+            input.value = oldName;
+            input.blur();
+          }
+        });
+      }
+
+      function finishEditingFile(index, input, oldFile) {
+        const newName = input.value.trim();
+        if (newName && newName !== oldFile.name) {
+            currentFolder.files[index].name = newName;
+            saveState();
+        }
+        filterFiles();
+      }
+
+      // --- Event Listeners dos Botões e Inputs ---
+
+      uploadBtn.addEventListener('click', () => {
+        const files = Array.from(fileInput.files);
+        if (files.length === 0) {
+          alert('Selecione ao menos um arquivo para enviar!');
+          return;
+        }
+
+        let filesProcessed = 0;
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                currentFolder.files.push({
+                    id: 'file-' + Date.now() + Math.random().toString(36).substring(2, 9),
+                    name: file.name,
+                    fileType: file.type || 'application/octet-stream',
+                    content: event.target.result // Conteúdo do arquivo em Base64
+                });
+                filesProcessed++;
+                if (filesProcessed === files.length) {
+                    fileInput.value = '';
+                    filterFiles();
+                    saveState();
+                }
+            };
+            reader.onerror = () => {
+                alert(`Erro ao ler o arquivo: ${file.name}`);
+                filesProcessed++;
+                if (filesProcessed === files.length) {
+                    fileInput.value = '';
+                    filterFiles();
+                    saveState();
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+      });
+
+      newFolderBtn.addEventListener('click', () => openFolderModal());
+
+
+      // --- Lógica de Pesquisa de Conteúdo Principal (Arquivos/Pastas) ---
+      function filterFiles() {
+        const searchTerm = searchInput.value.toLowerCase();
+        searchResults.innerHTML = '';
+
+        if (searchTerm === '') {
+          renderFiles();
+          searchResults.style.display = 'none';
+        } else {
+          const filteredFolders = currentFolder.folders.filter((f) =>
+            f.name.toLowerCase().includes(searchTerm)
+          );
+          const filteredFiles = currentFolder.files.filter((f) =>
+            f.name.toLowerCase().includes(searchTerm)
+          );
+
+          if (filteredFolders.length > 0 || filteredFiles.length > 0) {
+            filteredFolders.forEach(f => {
+                const li = document.createElement('li');
+                li.textContent = `📁 ${f.name} (Pasta)`;
+                li.addEventListener('click', () => {
+                    openFolder(f);
+                    searchInput.value = f.name;
+                    searchResults.style.display = 'none';
+                });
+                searchResults.appendChild(li);
+            });
+            filteredFiles.forEach(f => {
+                const li = document.createElement('li');
+                li.textContent = `📄 ${f.name} (Arquivo)`;
+                li.addEventListener('click', () => {
+                    alert(`Você clicou no arquivo "${f.name}". Uma visualização ou download ocorreria aqui.`);
+                    searchInput.value = f.name;
+                    searchResults.style.display = 'none';
+                });
+                searchResults.appendChild(li);
+            });
+            searchResults.style.display = 'block';
+          } else {
+            searchResults.style.display = 'none';
+          }
+          renderFiles(filteredFiles, filteredFolders);
+        }
+      }
+
+      searchInput.addEventListener('input', filterFiles);
+      searchInput.addEventListener('focus', filterFiles);
+
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+          searchResults.style.display = 'none';
+        }
+      });
+
+      // --- Lógica do Modal de Novo Documento de Texto ---
+      let editingFileIndex = -1;
+
+      function openNewDocModal(title = '', content = '', index = -1) {
+          docTitleInput.value = title;
+          docContentInput.value = content;
+          editingFileIndex = index;
+          newDocModal.style.display = 'flex';
+      }
+
+      function closeNewDocModal() {
+          newDocModal.style.display = 'none';
+          docTitleInput.value = '';
+          docContentInput.value = '';
+          editingFileIndex = -1;
+      }
+
+      newDocBtn.addEventListener('click', () => openNewDocModal());
+      closeDocModalBtn.addEventListener('click', closeNewDocModal);
+      cancelDocBtn.addEventListener('click', closeDocModalBtn); // Corrigido aqui
+
+      saveDocBtn.addEventListener('click', () => {
+          const title = docTitleInput.value.trim();
+          const content = docContentInput.value;
+
+          if (!title) {
+              alert('O título do documento não pode estar vazio.');
+              return;
+          }
+
+          const newDoc = {
+              id: 'textdoc-' + Date.now() + Math.random().toString(36).substring(2, 9),
+              name: title + '.txt',
+              fileType: 'text/plain',
+              content: content
+          };
+
+          if (editingFileIndex !== -1) {
+              currentFolder.files[editingFileIndex] = newDoc;
+          } else {
+              currentFolder.files.push(newDoc);
+          }
+
+          closeNewDocModal();
+          filterFiles();
+          saveState();
+      });
+
+      // --- Lógica do Modal de Pasta (Nova/Editar) ---
+      function openFolderModal(folderName = '', coverImage = null, folderId = null) {
+          folderNameInput.value = folderName;
+          currentFolderCoverImage = coverImage;
+          editingFolderId = folderId;
+
+          if (coverImage) {
+              folderCoverPreview.style.backgroundImage = `url(${coverImage})`;
+              folderCoverPreview.classList.remove('empty');
+          } else {
+              folderCoverPreview.style.backgroundImage = 'none';
+              folderCoverPreview.classList.add('empty');
+          }
+
+          folderModalTitle.textContent = folderId ? 'Editar Pasta' : 'Criar Nova Pasta';
+          folderModal.style.display = 'flex';
+      }
+
+      function closeFolderModal() {
+          folderModal.style.display = 'none';
+          folderNameInput.value = '';
+          folderCoverInput.value = '';
+          folderCoverPreview.style.backgroundImage = 'none';
+          folderCoverPreview.classList.add('empty');
+          currentFolderCoverImage = null;
+          editingFolderId = null;
+      }
+
+      closeFolderModalBtn.addEventListener('click', closeFolderModal);
+      cancelFolderBtn.addEventListener('click', closeFolderModal);
+
+      folderCoverInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                  currentFolderCoverImage = event.target.result;
+                  folderCoverPreview.style.backgroundImage = `url(${currentFolderCoverImage})`;
+                  folderCoverPreview.classList.remove('empty');
+              };
+              reader.readAsDataURL(file);
+          } else {
+              currentFolderCoverImage = null;
+              folderCoverPreview.style.backgroundImage = 'none';
+              folderCoverPreview.classList.add('empty');
+          }
+      });
+
+      saveFolderBtn.addEventListener('click', async () => { // Adicionado 'async'
+          const name = folderNameInput.value.trim();
+          if (!name) {
+              alert('O nome da pasta não pode estar vazio.');
+              return;
+          }
+
+          let faceDescriptor = null;
+          if (currentFolderCoverImage) {
+              try {
+                  // Cria um elemento Image para carregar a Base64
+                  const img = await faceapi.bufferToImage(currentFolderCoverImage);
+                  // Detecta o rosto e extrai o descritor
+                  const detections = await faceapi.detectSingleFace(img, new faceapi.SsdMobilenetv1Options())
+                                             .withFaceLandmarks()
+                                             .withFaceDescriptor();
+                  if (detections) {
+                      faceDescriptor = Array.from(detections.descriptor); // Converte Float32Array para array normal para salvar no JSON
+                      console.log("Descritor facial extraído para a pasta:", name, faceDescriptor);
+                  } else {
+                      alert("Nenhum rosto detectado na imagem de capa. A pasta será salva sem o reconhecimento facial.");
+                      console.warn("Nenhum rosto detectado na imagem de capa para:", name);
+                  }
+              } catch (error) {
+                  console.error("Erro ao processar imagem de capa para descritor facial:", error);
+                  alert("Erro ao processar imagem para reconhecimento facial. A pasta será salva sem o reconhecimento.");
+              }
+          }
+
+          if (editingFolderId) {
+              const folderToEdit = findFolderById(rootFolder, editingFolderId);
+              if (folderToEdit) {
+                  const parentOfEdited = findParentFolder(rootFolder, editingFolderId) || rootFolder;
+                  const exists = parentOfEdited.folders.some(
+                      f => f.name.toLowerCase() === name.toLowerCase() && f.id !== editingFolderId
+                  );
+                  if (exists) {
+                      alert('Já existe uma pasta com esse nome neste nível!');
+                      return;
+                  }
+
+                  folderToEdit.name = name;
+                  folderToEdit.coverImage = currentFolderCoverImage;
+                  folderToEdit.faceDescriptor = faceDescriptor; // Salva o descritor
+              }
+          } else {
+              const exists = currentFolder.folders.some( // CORREÇÃO AQUI: Verifica na pasta atual, não na raiz
+                  (f) => f.name.toLowerCase() === name.toLowerCase()
+              );
+              if (exists) {
+                  alert('Já existe uma pasta com esse nome na pasta atual!'); // Mensagem corrigida
+                  return;
+              }
+
+              const newFolder = {
+                  id: 'folder-' + Date.now() + Math.random().toString(36).substring(2, 9),
+                  name: name,
+                  folders: [],
+                  files: [],
+                  coverImage: currentFolderCoverImage,
+                  faceDescriptor: faceDescriptor // Salva o descritor
+              };
+              currentFolder.folders.push(newFolder); // Adiciona na pasta atual, não na raiz
+          }
+
+          closeFolderModal();
+          filterFiles();
+          updateFolderTree();
+          saveState();
+      });
+
+
+      // --- Lógica do Botão Sair ---
+      logoutBtn.addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+
+      // --- Lógica de Busca de Pastas no Menu Lateral ---
+      folderSearchInput.addEventListener('input', updateFolderTree);
+
+      // --- Lógica de Reconhecimento de Pessoa ---
+
+      let MIN_CONFIDENCE = 0.6; // Confiança mínima para detecção de rosto
+      let DISTANCE_THRESHOLD = 0.6; // Limiar de distância para reconhecimento (quanto menor, mais estrito)
+
+      // Prepara o FaceMatcher com os descritores das pastas
+      function updateFaceMatcher() {
+          const labeledFaceDescriptors = collectAllFaceDescriptors(rootFolder);
+          faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, DISTANCE_THRESHOLD);
+          console.log("FaceMatcher atualizado com", labeledFaceDescriptors.length, "pastas.");
+      }
+
+      // Abre o modal de reconhecimento e inicia a câmera
+      recognizeBtn.addEventListener('click', () => {
+          recognizeModal.style.display = 'flex';
+          startRecognition();
+          recognitionStatus.textContent = 'Aguardando detecção...';
+          startRecognitionBtn.style.display = 'none'; // Esconde o botão de iniciar ao abrir o modal
+          stopRecognitionBtn.style.display = 'inline-block'; // Mostra o botão de parar
+          // Recria o FaceMatcher sempre que o modal de reconhecimento é aberto para pegar novas pastas
+          updateFaceMatcher();
+      });
+
+      // Fecha o modal de reconhecimento e para a câmera
+      closeRecognizeModalBtn.addEventListener('click', stopRecognition);
+      closeRecognizeModalBtn.addEventListener('click', () => {
+          recognizeModal.style.display = 'none';
+          recognizeCameraError.style.display = 'none';
+      });
+
+      // Inicia a câmera de reconhecimento (chamada pelo botão ou ao abrir o modal)
+      startRecognitionBtn.addEventListener('click', () => {
+          startRecognitionBtn.style.display = 'none';
+          stopRecognitionBtn.style.display = 'inline-block';
+          recognitionStatus.textContent = 'Iniciando câmera para reconhecimento...';
+          startRecognition();
+      });
+
+      // Para o reconhecimento (chamada pelo botão ou ao fechar o modal)
+      stopRecognitionBtn.addEventListener('click', stopRecognition);
+
+      async function startRecognition() {
+          recognizeCameraError.style.display = 'none';
+          if (recognitionStream) stopRecognition(); // Garante que streams anteriores sejam parados
+
+          try {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              recognitionStream = stream;
+              recognizeVideoElement.srcObject = stream;
+              recognizeVideoElement.play();
+
+              recognitionStatus.textContent = 'Câmera ativa. Detectando rostos...';
+              startRecognitionBtn.style.display = 'none';
+              stopRecognitionBtn.style.display = 'inline-block';
+
+              // Inicia o loop de detecção e reconhecimento
+              recognitionInterval = setInterval(async () => {
+                  if (recognizeVideoElement.paused || recognizeVideoElement.ended || !faceMatcher) {
+                      return; // Não faça nada se o vídeo estiver parado ou modelos não carregados
+                  }
+
+                  const detections = await faceapi.detectSingleFace(recognizeVideoElement, new faceapi.SsdMobilenetv1Options())
+                                                 .withFaceLandmarks()
+                                                 .withFaceDescriptor();
+
+                  if (detections) {
+                      const bestMatch = faceMatcher.findBestMatch(detections.descriptor);
+                      recognitionStatus.textContent = `Pessoa reconhecida: ${bestMatch.label} (Distância: ${bestMatch.distance.toFixed(2)})`;
+
+                      if (bestMatch.label !== 'unknown' && bestMatch.distance < DISTANCE_THRESHOLD) {
+                          stopRecognition();
+                          recognizeModal.style.display = 'none';
+                          const targetFolder = findFolderInRootByName(rootFolder, bestMatch.label);
+                          if (targetFolder) {
+                              alert(`Bem-vindo, ${targetFolder.name}! Redirecionando para a pasta.`);
+                              openFolder(targetFolder);
+                          } else {
+                              alert('Pasta reconhecida, mas não encontrada na estrutura. Tente novamente.');
+                          }
+                      }
+                  } else {
+                      recognitionStatus.textContent = 'Nenhum rosto detectado.';
+                  }
+              }, 1000); // Roda a cada 1 segundo para não sobrecarregar
+          } catch (err) {
+              console.error("Erro ao iniciar reconhecimento: ", err);
+              recognizeCameraError.textContent = 'Não foi possível iniciar a câmera de reconhecimento. Verifique as permissões.';
+              recognizeCameraError.style.display = 'block';
+              stopRecognition();
+          }
+      }
+
+      function stopRecognition() {
+          if (recognitionInterval) {
+              clearInterval(recognitionInterval);
+              recognitionInterval = null;
+          }
+          if (recognitionStream) {
+              recognitionStream.getTracks().forEach(track => track.stop());
+              recognizeVideoElement.srcObject = null;
+              recognitionStream = null;
+          }
+          recognitionStatus.textContent = 'Reconhecimento parado.';
+          startRecognitionBtn.style.display = 'inline-block';
+          stopRecognitionBtn.style.display = 'none';
+          recognizeVideoElement.style.display = 'block'; // Garante que o vídeo esteja visível se reiniciar
+          recognizeCanvasElement.style.display = 'none'; // Garante que o canvas esteja escondido
+      }
+
+      // Função auxiliar para encontrar pasta pelo nome na estrutura
+      function findFolderInRootByName(folder, name) {
+          if (folder.name === name) {
+              return folder;
+          }
+          if (folder.folders) {
+              for (const sub of folder.folders) {
+                  const found = findFolderInRootByName(sub, name);
+                  if (found) return found;
+              }
+          }
+          return null;
+      }
+
+
+      // --- Lógica do Modal da Câmera para Imagens de Capa (NOVO) ---
+      takePhotoBtn.addEventListener('click', () => {
+          cameraModal.style.display = 'flex';
+          startCamera();
+          captureBtn.style.display = 'inline-block';
+          retakeBtn.style.display = 'none';
+          confirmPhotoBtn.style.display = 'none';
+          videoElement.style.display = 'block';
+          canvasElement.style.display = 'none';
+          cameraError.style.display = 'none';
+      });
+
+      closeCameraModalBtn.addEventListener('click', stopCamera);
+      closeCameraModalBtn.addEventListener('click', () => {
+          cameraModal.style.display = 'none';
+      });
+
+      captureBtn.addEventListener('click', () => {
+          const context = canvasElement.getContext('2d');
+          canvasElement.width = videoElement.videoWidth;
+          canvasElement.height = videoElement.videoHeight;
+          context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+          currentFolderCoverImage = canvasElement.toDataURL('image/png');
+
+          videoElement.style.display = 'none';
+          canvasElement.style.display = 'block';
+          captureBtn.style.display = 'none';
+          retakeBtn.style.display = 'inline-block';
+          confirmPhotoBtn.style.display = 'inline-block';
+      });
+
+      retakeBtn.addEventListener('click', () => {
+          videoElement.style.display = 'block';
+          canvasElement.style.display = 'none';
+          captureBtn.style.display = 'inline-block';
+          retakeBtn.style.display = 'none';
+          confirmPhotoBtn.style.display = 'none';
+          currentFolderCoverImage = null;
+      });
+
+      confirmPhotoBtn.addEventListener('click', () => {
+          folderCoverPreview.style.backgroundImage = `url(${currentFolderCoverImage})`;
+          folderCoverPreview.classList.remove('empty');
+          closeCameraModalBtn.click(); // Fecha o modal da câmera
+      });
+
+      async function startCamera() {
+          try {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              cameraStream = stream;
+              videoElement.srcObject = stream;
+              videoElement.play();
+          } catch (err) {
+              console.error("Erro ao acessar a câmera:", err);
+              cameraError.style.display = 'block';
+              stopCamera();
+          }
+      }
+
+      function stopCamera() {
+          if (cameraStream) {
+              cameraStream.getTracks().forEach(track => track.stop());
+              videoElement.srcObject = null;
+              cameraStream = null;
+          }
+      }
+
+
+      // --- Inicialização ---
+      document.getElementById('userEmail').textContent =
+        localStorage.getItem('userEmail') || 'usuario@exemplo.com';
+
+      renderFiles();
+      updateFolderTree();
+    </script>
+  </body>
+</html>

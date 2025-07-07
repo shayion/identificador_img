@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro - Plataforma</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="main-container single-column"> <div class="left"> <div class="login-box"> <h2><span>Cadastro</span></h2>
+        <p>Preencha os campos para criar sua conta</p>
+
+        <div id="successMsg" class="success" style="display: none;">Cadastro concluído com sucesso!</div>
+        <div id="errorMsg" class="error"></div> <label for="full_name">Nome</label>
+        <input type="text" id="full_name" placeholder="Seu nome completo" />
+
+        <label for="username">Usuário</label>
+        <input type="text" id="username" placeholder="seu_usuario" />
+
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="seuemail@exemplo.com" />
+
+        <label for="password">Senha</label>
+        <input type="password" id="password" placeholder="Crie uma senha" />
+
+        <label for="confirmPassword">Confirmar senha</label>
+        <input type="password" id="confirmPassword" placeholder="Confirme sua senha" />
+
+        <button id="registerBtn">Cadastrar</button>
+
+        <div class="links">
+          <a href="/static/index.html">Voltar para Login</a>
+        </div>
+      </div>
+    </div>
+    </div>
+
+  <script src="/static/js/register.js"></script>
+</body>
+</html>
